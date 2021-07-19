@@ -115,7 +115,7 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 print("reading files?")
 if params.fileList == "none" : readFiles = params.inputFiles
 else : 
-    readFiles = cms.untracked.vstring( FileUtils.loadListFromFile (os.environ['CMSSW_BASE']+'/src/PhysicsTools/SUEPScouting/'+params.fileList) )
+    readFiles = cms.untracked.vstring( FileUtils.loadListFromFile (os.environ['CMSSW_BASE']+'/src/PhysicsTools/Run3ScoutingAnalysisTools/'+params.fileList) )
 print("we shall see")
 process.source = cms.Source("PoolSource",
         fileNames = cms.untracked.vstring(readFiles) 
