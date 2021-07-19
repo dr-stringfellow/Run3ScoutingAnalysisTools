@@ -1,4 +1,6 @@
 import FWCore.ParameterSet.Config as cms
+import FWCore.Utilities.FileUtils as FileUtils
+import os
 
 # Set parameters externally
 from FWCore.ParameterSet.VarParsing import VarParsing
@@ -67,6 +69,24 @@ params.register(
     'Cross-section for a Monte Carlo Sample'
 )
 
+params.register(
+    'fileList',
+    'none',
+    VarParsing.multiplicity.singleton,VarParsing.varType.string,
+    'input list of files'
+)
+
+params.setDefault(
+    'maxEvents',
+    10
+)
+
+params.setDefault(
+    'outputFile',
+    'test.root'
+)
+
+
 # Define the process
 process = cms.Process("LL")
 
@@ -89,10 +109,16 @@ process.options = cms.untracked.PSet(
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
 
 # Input EDM files
+#list = FileUtils.loadListFromFile(options.inputFiles)
+#readFiles = cms.untracked.vstring(*list)
+
+print("reading files?")
+if params.fileList == "none" : readFiles = params.inputFiles
+else : 
+    readFiles = cms.untracked.vstring( FileUtils.loadListFromFile (os.environ['CMSSW_BASE']+'/src/PhysicsTools/SUEPScouting/'+params.fileList) )
+print("we shall see")
 process.source = cms.Source("PoolSource",
-	fileNames = cms.untracked.vstring([
-	'root://cms-xrd-global.cern.ch//store/group/dpg_trigger/comm_trigger/TriggerStudiesGroup/Scouting/Run3/ML_210512/SMS-T1qqqq_TuneCP5_14TeV-pythia8/ML_210512/210519_133149/0000/scouting_1.root'
-	])
+        fileNames = cms.untracked.vstring(readFiles) 
 )
 
 # Load the standard set of configuration modules
@@ -115,7 +141,7 @@ else :
 
 # Define the services needed for the treemaker
 process.TFileService = cms.Service("TFileService",
-    fileName = cms.string("scout16_3.root")
+    fileName = cms.string(params.outputFile)
 )
 
 # Tree for the generator weights
