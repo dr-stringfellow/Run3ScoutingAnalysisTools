@@ -605,7 +605,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   //sort PFcands according to pT
   struct {
-    bool operator()(Run3ScoutingParticle a, Run3ScoutingParticle b) const { return a.pt() < b.pt(); }
+    bool operator()(Run3ScoutingParticle a, Run3ScoutingParticle b) const { return a.pt() > b.pt(); }
   } custompT;
 
   std::sort(PFCANDS.begin(), PFCANDS.end(), custompT);
