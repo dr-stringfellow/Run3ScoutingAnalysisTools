@@ -2,6 +2,7 @@ import FWCore.ParameterSet.Config as cms
 import FWCore.Utilities.FileUtils as FileUtils
 import os
 
+
 # Set parameters externally
 from FWCore.ParameterSet.VarParsing import VarParsing
 params = VarParsing('analysis')
@@ -78,7 +79,7 @@ params.register(
 
 params.setDefault(
     'maxEvents',
-    10
+    500
 )
 
 params.setDefault(
@@ -106,20 +107,30 @@ process.options = cms.untracked.PSet(
 )
 
 # How many events to process
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(100) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 
 # Input EDM files
-#list = FileUtils.loadListFromFile(options.inputFiles)
-#readFiles = cms.untracked.vstring(*list)
+#process.source = cms.Source("PoolSource",
+#	fileNames = cms.untracked.vstring([
+#	'root://cms-xrd-global.cern.ch//store/group/dpg_trigger/comm_trigger/TriggerStudiesGroup/Scouting/Run3/ML_210512/SMS-T1qqqq_TuneCP5_14TeV-pythia8/ML_210512/210519_133149/0000/scouting_1.root'
+#	])
+#)
 
 print("reading files?")
 if params.fileList == "none" : readFiles = params.inputFiles
-else : 
-    readFiles = cms.untracked.vstring( FileUtils.loadListFromFile (os.environ['CMSSW_BASE']+'/src/PhysicsTools/Run3ScoutingAnalysisTools/'+params.fileList) )
+else :
+    readFiles = cms.untracked.vstring( FileUtils.loadListFromFile (os.environ['CMSSW_BASE']+'/src/Run3ScoutingAnalysisTools/'+params.fileList) )
+
 print("we shall see")
 process.source = cms.Source("PoolSource",
         fileNames = cms.untracked.vstring(readFiles) 
 )
+#process.source = cms.Source("PoolSource",
+	#fileNames = cms.untracked.vstring([
+	#'file:/tmp/bmaier/anomaly/final/CMSSW_11_2_1_Patatrack/src/scouting_384.root'
+	                    #])
+#        fileNames = cms.untracked.vstring(readFiles) 
+#)
 
 # Load the standard set of configuration modules
 process.load('Configuration.StandardSequences.Services_cff')
