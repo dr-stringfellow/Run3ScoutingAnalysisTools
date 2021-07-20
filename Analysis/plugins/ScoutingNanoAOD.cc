@@ -263,10 +263,10 @@ private:
   vector<Float16_t> 	    pfcandpt;
   vector<Float16_t>         pfcandeta;
   vector<Float16_t>         pfcandphi;
-  vector<Float16_t>	    pfcandm;
+  vector<Float16_t>	    pdcandm;
   vector<Float16_t>	    pfcandpdgid;
   vector<Float16_t>	    pfcandvertex;
-  vector<Int_t>             pfcandfjidx;
+  vector<Int_t>	            pfcandfjidx;
 
   UInt_t n_fatjet;
   vector<Float16_t> FatJet_area;
@@ -371,10 +371,10 @@ tree->Branch("Electron_sigmaietaieta"       ,&Electron_sigmaietaieta 	 );
   tree->Branch("pfcandpt"        	   ,&pfcandpt 		 );
   tree->Branch("pfcandeta"            	   ,&pfcandeta 		 );
   tree->Branch("pfcandphi"            	   ,&pfcandphi		 );
-  tree->Branch("pfcandm"            	   ,&pfcandm 		 );
+  tree->Branch("pdcandm"            	   ,&pdcandm 		 );
   tree->Branch("pfcandpdgid"               ,&pfcandpdgid		 );
   tree->Branch("pfcandvertex"              ,&pfcandvertex 	 );
-  tree->Branch("pfcandfjidx"             ,&pfcandfjidx         );
+  tree->Branch("pfcandfjidx"             ,&pfcandfjidx  );
 
   tree->Branch("n_mu"            	   ,&n_mu 			, "n_mu/i"		);
   tree->Branch("Muon_pt", &Muon_pt	);
@@ -434,6 +434,7 @@ tree->Branch("Electron_sigmaietaieta"       ,&Electron_sigmaietaieta 	 );
   tree->Branch("Jet_mvaDiscriminator"            	   ,&Jet_mvaDiscriminator 		 );
   tree->Branch("Jet_constituents"            	, "std::vector< vector<int16_t> >"   , &Jet_constituents 		, 32000, 0);
   
+  tree->Branch("n_fatjet"            	   	,&n_fatjet 			, "n_fatjet/i"		);
   tree->Branch("FatJet_area",&FatJet_area);
   tree->Branch("FatJet_eta",&FatJet_eta);
   tree->Branch("FatJet_n2b1",&FatJet_n2b1);
@@ -593,13 +594,31 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     n_pho++;
   }
 
+  
+
+  vector<Run3ScoutingParticle> PFCANDS;
+  for (auto pfcands_iter = pfcandsH->begin(); pfcands_iter != pfcandsH->end(); ++pfcands_iter) {
+    Run3ScoutingParticle tmp(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->pt())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->eta())),MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->phi())),pfcands_iter->m(),pfcands_iter->pdgId(),pfcands_iter->vertex());
+    
+    PFCANDS.push_back(tmp);
+  }
+
+  //sort PFcands according to pT
+  struct {
+    bool operator()(Run3ScoutingParticle a, Run3ScoutingParticle b) const { return a.pt() < b.pt(); }
+  } custompT;
+
+  std::sort(PFCANDS.begin(), PFCANDS.end(), custompT);
+  
   vector<PseudoJet> fj_part;
   n_pfcand = 0;
-  for (auto pfcands_iter = pfcandsH->begin(); pfcands_iter != pfcandsH->end(); ++pfcands_iter) {
-    pfcandpt.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->pt())));
-    pfcandeta.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->eta())));
-    pfcandphi.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->phi())));
-    pfcandm.push_back(pfcands_iter->m());
+
+  /*
+    for (auto pfcands_iter = pfcandsH->begin(); pfcands_iter != pfcandsH->end(); ++pfcands_iter) {
+      pfcandpt.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->pt())));
+      pfcandeta.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->eta())));
+      pfcandphi.push_back(MiniFloatConverter::float16to32(MiniFloatConverter::float32to16(pfcands_iter->phi())));
+    pdcandm.push_back(pfcands_iter->m());
     pfcandpdgid.push_back(pfcands_iter->pdgId());
     pfcandvertex.push_back(pfcands_iter->vertex());
     PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
@@ -609,6 +628,25 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
     n_pfcand++;
   } 
+  */
+
+  for (auto & pfcands_iter : PFCANDS) {
+    pfcandpt.push_back(pfcands_iter.pt());
+    pfcandeta.push_back(pfcands_iter.eta());
+    pfcandphi.push_back(pfcands_iter.phi());
+    pdcandm.push_back(pfcands_iter.m());
+    pfcandpdgid.push_back(pfcands_iter.pdgId());
+    pfcandvertex.push_back(pfcands_iter.vertex());
+    PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
+    temp_jet.reset_PtYPhiM(pfcands_iter.pt(), pfcands_iter.eta(), pfcands_iter.phi(), pfcands_iter.m());
+    temp_jet.set_user_index(n_pfcand);
+    fj_part.push_back(temp_jet);
+
+    n_pfcand++;
+  } 
+
+
+
 
      n_mu=0;
 for (auto muons_iter = muonsH->begin(); muons_iter != muonsH->end(); ++muons_iter) {
@@ -697,6 +735,7 @@ for (auto muons_iter = muonsH->begin(); muons_iter != muonsH->end(); ++muons_ite
   ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
   vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(100.0));
 
+  n_fatjet = 0;
   for(auto &j: ak8_jets) {
     FatJet_area.push_back(j.area());
     FatJet_eta.push_back(j.pseudorapidity());
@@ -716,25 +755,32 @@ for (auto muons_iter = muonsH->begin(); muons_iter != muonsH->end(); ++muons_ite
     FatJet_tau2.push_back(nSub2.result(j));
     FatJet_tau3.push_back(nSub3.result(j));
     FatJet_tau4.push_back(nSub4.result(j));
+
+    n_fatjet++;
   }
+
 
   n_pfcand = 0;
   for (auto pfcands_iter = pfcandsH->begin(); pfcands_iter != pfcandsH->end(); ++pfcands_iter) {
     int tmpidx = -1;
+    int ak8count = 0;
     for (auto &j: ak8_jets) {
       for (auto &k: j.constituents()){
-        if ((UInt_t)k.user_index() == n_pfcand){
-          tmpidx = n_pfcand;
-          break;
-        }
+	if ((UInt_t)k.user_index() == n_pfcand){
+	  tmpidx = ak8count;
+	  ak8count++;
+	  break;
+	}
       }
       if (tmpidx>-1)
-        break;
+	break;
+      else
+	ak8count++;
     }
     pfcandfjidx.push_back(tmpidx);
     n_pfcand++;
   }
-
+  
  if (doL1) {
     l1GtUtils_->retrieveL1(iEvent,iSetup,algToken_);
     	for( int r = 0; r<280; r++){
@@ -839,7 +885,7 @@ void ScoutingNanoAOD::clearVars(){
   pfcandpt.clear();
   pfcandeta.clear();
   pfcandphi.clear();
-  pfcandm.clear();
+  pdcandm.clear();
   pfcandpdgid.clear();
   pfcandvertex.clear();
   pfcandfjidx.clear();
