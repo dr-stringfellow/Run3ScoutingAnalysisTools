@@ -86,12 +86,12 @@ process.options = cms.untracked.PSet(
 )
 
 # How many events to process
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
 
 # Input EDM files
 process.source = cms.Source("PoolSource",
 	fileNames = cms.untracked.vstring([
-	'file:/eos/user/a/adlintul/scouting/particlenet/particle_features/edm/hlt_latest_numEvent100.root'
+	'file:/eos/user/a/adlintul/scouting/particlenet/particle_features/edm/hlt_PN_numEvent100.root'
 	])
 )
 
@@ -115,7 +115,7 @@ else :
 
 # Define the services needed for the treemaker
 process.TFileService = cms.Service("TFileService",
-    fileName = cms.string("file:/eos/user/a/adlintul/scouting/particlenet/particle_features/nano/hlt_latest.root")
+    fileName = cms.string("file:/eos/user/a/adlintul/scouting/particlenet/particle_features/nano/hlt_PN_numEvent100.root")
 )
 
 # Tree for the generator weights
@@ -146,14 +146,15 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
         l1tAlgBlkInputTag = cms.InputTag("gtStage2Digis"),
         l1tExtBlkInputTag = cms.InputTag("gtStage2Digis"),
         l1Seeds           = cms.vstring(L1Info),
-	#vertices         = cms.InputTag("hltScoutingMuonPacker","displacedVtx"),
-	muons            = cms.InputTag("hltScoutingMuonPacker"),
-	electrons        = cms.InputTag("hltScoutingEgammaPacker"),
+	    #vertices         = cms.InputTag("hltScoutingMuonPacker","displacedVtx"),
+        muons            = cms.InputTag("hltScoutingMuonPacker"),
+        electrons        = cms.InputTag("hltScoutingEgammaPacker"),
         photons          = cms.InputTag("hltScoutingEgammaPacker"),
-	pfcands          = cms.InputTag("hltScoutingPFPacker"),
-	pfjets           = cms.InputTag("hltScoutingPFPacker"),
+        pfcands          = cms.InputTag("hltScoutingPFPacker"),
+        pfjets           = cms.InputTag("hltScoutingPFPacker"),
         tracks           = cms.InputTag("hltScoutingTrackPacker"),
         pfcandsParticleNet = cms.InputTag("hltScoutingPFPacker"),
+        genpart          = cms.InputTag('genParticles')
     	#pileupinfo       = cms.InputTag("addPileupInfo"),
     	#geneventinfo     = cms.InputTag("generator"),
 

@@ -107,7 +107,12 @@
 
 #include "DataFormats/BTauReco/interface/TaggingVariable.h"
 
+#include "Run3ScoutingAnalysisTools/Analysis/interface/FatJetMatching.h"
+
 using namespace std;
+using namespace deepntuples;
+
+FatJetMatching ak8_match;
 
 class ScoutingNanoAOD : public edm::one::EDAnalyzer<edm::one::SharedResources, edm::one::WatchRuns, edm::one::WatchLuminosityBlocks> {
 public:
@@ -129,6 +134,7 @@ private:
   virtual void clearVars();
   const edm::InputTag triggerResultsTag;
   const edm::EDGetTokenT<std::vector<Run3ScoutingParticleParticleNet> >  	pfcandsParticleNetToken;
+  const edm::EDGetTokenT<reco::GenParticleCollection>      genpartsToken;
 
   std::vector<std::string> triggerPathsVector;
   std::map<std::string, int> triggerPathsMap;
@@ -174,10 +180,28 @@ private:
   vector<Float16_t> pfcand_btagEtaRel;
   vector<Float16_t> pfcand_btagPtRatio;
   vector<Float16_t> pfcand_btagPParRatio;
+
+  //ParticleNet Jet label
+  int label_Top_bcq;
+  int label_Top_bqq;
+  int label_Top_bc;
+  int label_Top_bq;
+  int label_W_cq;
+  int label_W_qq;
+  int label_Z_bb;
+  int label_Z_cc;
+  int label_Z_qq;
+  int label_H_bb;
+  int label_H_cc;
+  int label_H_qqqq;
+  int label_H_tautau;
+  int label_H_qq;
+  int label_QCD_others;
 };
 
 ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
-  pfcandsParticleNetToken  (consumes<std::vector<Run3ScoutingParticleParticleNet> > (iConfig.getParameter<edm::InputTag>("pfcandsParticleNet")))
+  pfcandsParticleNetToken  (consumes<std::vector<Run3ScoutingParticleParticleNet> > (iConfig.getParameter<edm::InputTag>("pfcandsParticleNet"))),
+  genpartsToken            (consumes<reco::GenParticleCollection>         (iConfig.getParameter<edm::InputTag>("genpart")))
 {
   usesResource("TFileService");
   if (doL1) {
@@ -222,8 +246,21 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("pfcand_btagEtaRel", &pfcand_btagEtaRel);
   tree->Branch("pfcand_btagPtRatio", &pfcand_btagPtRatio);
   tree->Branch("pfcand_btagPParRatio", &pfcand_btagPParRatio);
-}
 
+  tree->Branch("label_Top_bcq", &label_Top_bcq);
+  tree->Branch("label_Top_bqq", &label_Top_bqq);
+  tree->Branch("label_Top_bc", &label_Top_bc);
+  tree->Branch("label_Top_bq", &label_Top_bq);
+  tree->Branch("label_W_cq", &label_W_cq);
+  tree->Branch("label_w_qq", &label_W_qq);
+  tree->Branch("label_Z_bb", &label_Z_bb);
+  tree->Branch("label_Z_cc", &label_Z_cc);
+  tree->Branch("label_H_bb", &label_H_bb);
+  tree->Branch("label_H_qqqq", &label_H_qqqq);
+  tree->Branch("label_H_tautau", &label_H_tautau);
+  tree->Branch("label_H_qq", &label_H_qq);
+  tree->Branch("label_QCD_others", &label_QCD_others);
+}
 
 ScoutingNanoAOD::~ScoutingNanoAOD() {
 }
@@ -238,6 +275,11 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   Handle<vector<Run3ScoutingParticleParticleNet> > pfcandsParticleNetH;
   iEvent.getByToken(pfcandsParticleNetToken, pfcandsParticleNetH);
 
+  Handle<GenParticleCollection> genpartH;
+  iEvent.getByToken(genpartsToken, genpartH);
+  auto genParticles = dynamic_cast<const reco::GenParticleCollection&> (*genpartH);
+
+  // Create AK8 Jet
   vector<PseudoJet> fj_part;
   int pfcand_i = 0;
     for (auto pfcands_iter = pfcandsParticleNetH->begin(); pfcands_iter != pfcandsParticleNetH->end(); ++pfcands_iter) {
@@ -248,13 +290,14 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       pfcand_i++;
     }
 
-  //FatJet stuff
   JetDefinition ak8_def = JetDefinition(antikt_algorithm, 0.8);
   fastjet::GhostedAreaSpec area_spec(5.0,1,0.01);
   fastjet::AreaDefinition area_def(fastjet::active_area, area_spec);
 
   ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
   vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(100.0));
+
+  cout << "Number of jets: " << ak8_jets.size() << endl;
 
   for(auto &j: ak8_jets) {
 
@@ -298,6 +341,24 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       pfcand_btagPtRatio.push_back(track_mom3.Perp(jet_dir3) / track_mag);
       pfcand_btagPParRatio.push_back(jet_dir.Dot(track_mom) / track_mag);
     }
+
+    auto ak8_label = ak8_match.flavorLabel(j, genParticles, 0.8);
+    cout << "Label: " << ak8_label.first << endl;
+    label_Top_bcq = (ak8_label.first == FatJetMatching::Top_bcq);
+    label_Top_bqq = (ak8_label.first == FatJetMatching::Top_bqq);
+    label_Top_bc = (ak8_label.first == FatJetMatching::Top_bc);
+    label_Top_bq = (ak8_label.first == FatJetMatching::Top_bq);
+    label_W_cq = (ak8_label.first == FatJetMatching::W_cq);
+    label_W_qq = (ak8_label.first == FatJetMatching::W_qq);
+    label_Z_bb = (ak8_label.first == FatJetMatching::Z_bb);
+    label_Z_cc = (ak8_label.first == FatJetMatching::Z_cc);
+    label_Z_qq = (ak8_label.first == FatJetMatching::Z_qq);
+    label_H_bb = (ak8_label.first == FatJetMatching::H_bb);
+    label_H_cc = (ak8_label.first == FatJetMatching::H_cc);
+    label_H_qqqq = (ak8_label.first == FatJetMatching::H_qqqq);
+    label_H_tautau = (ak8_label.first == FatJetMatching::H_tautau);
+    label_H_qq = (ak8_label.first == FatJetMatching::H_qq);
+
     tree->Fill();	
     clearVars();
   }
