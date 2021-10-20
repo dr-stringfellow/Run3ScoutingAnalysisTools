@@ -303,34 +303,38 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
     float etasign = j.eta() > 0 ? 1 : -1;
 
-    float jet_px = j.pt() * std::cos(j.phi());
-    float jet_py = j.pt() * std::sin(j.phi());
-    float jet_pz = j.pt() * std::sinh(j.eta());
+    // The following is needed to compute btagEtaRel, btagPtRatio and btagPParRatio
+    float jet_px = j.pt() * cos(j.phi());
+    float jet_py = j.pt() * sin(j.phi());
+    float jet_pz = j.pt() * sinh(j.eta());
     math::XYZVector jet_dir_temp(jet_px, jet_py, jet_pz);
     math::XYZVector jet_dir = jet_dir_temp.Unit();
     TVector3 jet_dir3(jet_px, jet_py, jet_pz);
 
+    // Loop over AK8 jet constituents
     const vector<PseudoJet> constituents = j.constituents();
     for (auto &cand : constituents) {
+      // Match PseudoJet constituent to PF candidate
       auto *reco_cand = dynamic_cast<const Run3ScoutingParticleParticleNet*> (&pfcandsParticleNetH->at(cand.user_index()));
-      float trk_px = reco_cand->trk_pt() * std::cos(reco_cand->trk_phi());
-      float trk_py = reco_cand->trk_pt() * std::sin(reco_cand->trk_phi());
-      float trk_pz = reco_cand->trk_pt() * std::sinh(reco_cand->trk_eta());
+      // The following is needed to compute btagEtaRel, btagPtRatio and btagPParRatio
+      float trk_px = reco_cand->trk_pt() * cos(reco_cand->trk_phi());
+      float trk_py = reco_cand->trk_pt() * sin(reco_cand->trk_phi());
+      float trk_pz = reco_cand->trk_pt() * sinh(reco_cand->trk_eta());
       math::XYZVector track_mom(trk_px, trk_py, trk_pz);
       TVector3 track_mom3(trk_px, trk_py, trk_pz);
-      double track_mag = std::sqrt(trk_px * trk_px + trk_py * trk_py + trk_pz * trk_pz);
+      double track_mag = sqrt(trk_px * trk_px + trk_py * trk_py + trk_pz * trk_pz);
 
-      pfcand_pt_log_nopuppi.push_back(std::log(reco_cand->pt()));
-      pfcand_e_log_nopuppi.push_back(std::log(std::sqrt(reco_cand->pt()*reco_cand->pt() + reco_cand->m()*reco_cand->m())));
+      pfcand_pt_log_nopuppi.push_back(log(reco_cand->pt()));
+      pfcand_e_log_nopuppi.push_back(log(sqrt(reco_cand->pt()*reco_cand->pt() + reco_cand->m()*reco_cand->m())));
       pfcand_etarel.push_back(etasign * (reco_cand->eta() - j.eta()));
       pfcand_phirel.push_back(deltaPhi(reco_cand->phi(), j.phi()));
-      pfcand_abseta.push_back(std::abs(reco_cand->eta()));
+      pfcand_abseta.push_back(abs(reco_cand->eta()));
       pfcand_charge.push_back(reco_cand->charge());
-      pfcand_isEl.push_back(std::abs(reco_cand->pdgId()) == 11);
-      pfcand_isMu.push_back(std::abs(reco_cand->pdgId()) == 13);
-      pfcand_isGamma.push_back(std::abs(reco_cand->pdgId()) == 22);
-      pfcand_isChargedHad.push_back(std::abs(reco_cand->pdgId()) == 211);
-      pfcand_isNeutralHad.push_back(std::abs(reco_cand->pdgId()) == 130);
+      pfcand_isEl.push_back(abs(reco_cand->pdgId()) == 11);
+      pfcand_isMu.push_back(abs(reco_cand->pdgId()) == 13);
+      pfcand_isGamma.push_back(abs(reco_cand->pdgId()) == 22);
+      pfcand_isChargedHad.push_back(abs(reco_cand->pdgId()) == 211);
+      pfcand_isNeutralHad.push_back(abs(reco_cand->pdgId()) == 130);
       pfcand_lostInnerHits.push_back(reco_cand->lostInnerHits());
       pfcand_quality.push_back(reco_cand->quality());
       pfcand_dz.push_back(reco_cand->dz());
@@ -342,6 +346,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       pfcand_btagPParRatio.push_back(jet_dir.Dot(track_mom) / track_mag);
     }
 
+    // Match AK8 jet to truth label
     auto ak8_label = ak8_match.flavorLabel(j, genParticles, 0.8);
     cout << "Label: " << ak8_label.first << endl;
     label_Top_bcq = (ak8_label.first == FatJetMatching::Top_bcq);
@@ -358,6 +363,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     label_H_qqqq = (ak8_label.first == FatJetMatching::H_qqqq);
     label_H_tautau = (ak8_label.first == FatJetMatching::H_tautau);
     label_H_qq = (ak8_label.first == FatJetMatching::H_qq);
+    label_QCD_others = (ak8_label.first == FatJetMatching::QCD_others);
 
     tree->Fill();	
     clearVars();
