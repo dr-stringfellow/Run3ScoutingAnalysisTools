@@ -135,6 +135,7 @@ private:
   const edm::InputTag triggerResultsTag;
   const edm::EDGetTokenT<std::vector<Run3ScoutingParticleParticleNet> >  	pfcandsParticleNetToken;
   const edm::EDGetTokenT<reco::GenParticleCollection>      genpartsToken;
+  // const edm::EDGetTokenT<std::vector<reco::GenParticle>> genParticleToken_;
 
   std::vector<std::string> triggerPathsVector;
   std::map<std::string, int> triggerPathsMap;
@@ -208,6 +209,7 @@ private:
 ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   pfcandsParticleNetToken  (consumes<std::vector<Run3ScoutingParticleParticleNet> > (iConfig.getParameter<edm::InputTag>("pfcandsParticleNet"))),
   genpartsToken            (consumes<reco::GenParticleCollection>         (iConfig.getParameter<edm::InputTag>("genpart")))
+  // genParticleToken_(consumes<std::vector<reco::GenParticle>>(iConfig.getParameter<edm::InputTag>("genParticles")))
 {
   usesResource("TFileService");
   if (doL1) {
@@ -288,7 +290,8 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   Handle<GenParticleCollection> genpartH;
   iEvent.getByToken(genpartsToken, genpartH);
-  auto genParticles = dynamic_cast<const reco::GenParticleCollection&> (*genpartH);
+  // edm::Handle<vector<reco::GenParticle>> genParticles;
+  // iEvent.getByToken(genParticleToken_, genParticles);
 
   // Create AK8 Jet
   vector<PseudoJet> fj_part;
@@ -309,8 +312,13 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(100.0));
 
   cout << "Number of jets: " << ak8_jets.size() << endl;
+  int jet_id = 0;
+  int qcd_n = 0;
 
   for(auto &j: ak8_jets) {
+
+    std::cout << "Jet: " << jet_id << std::endl;
+    jet_id++;
 
     float etasign = j.eta() > 0 ? 1 : -1;
 
@@ -364,8 +372,12 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     fj_mass = j.m();
 
     // Match AK8 jet to truth label
-    auto ak8_label = ak8_match.flavorLabel(j, genParticles, 0.8);
-    cout << "Label: " << ak8_label.first << endl;
+    auto ak8_label = ak8_match.flavorLabel(j, *genpartH, 0.8);
+    cout << "Jet label: " << ak8_label.first << endl;
+    if (ak8_label.first != 55) {
+      std::cout << "Jet label is not QCD!" << std::endl;
+      qcd_n++;
+    }
     label_Top_bcq = (ak8_label.first == FatJetMatching::Top_bcq);
     label_Top_bqq = (ak8_label.first == FatJetMatching::Top_bqq);
     label_Top_bc = (ak8_label.first == FatJetMatching::Top_bc);
@@ -385,6 +397,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     tree->Fill();	
     clearVars();
   }
+  std::cout << "Number on none QCD labels: " << qcd_n << std::endl;
 	
 }
 

@@ -86,13 +86,11 @@ process.options = cms.untracked.PSet(
 )
 
 # How many events to process
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10) )
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 
 # Input EDM files
 process.source = cms.Source("PoolSource",
-	fileNames = cms.untracked.vstring([
-	'file:/eos/user/a/adlintul/scouting/particlenet/particle_features/edm/hlt_PN_numEvent100.root'
-	])
+	fileNames = cms.untracked.vstring(params.inputFiles)
 )
 
 # Load the standard set of configuration modules
@@ -115,7 +113,7 @@ else :
 
 # Define the services needed for the treemaker
 process.TFileService = cms.Service("TFileService",
-    fileName = cms.string("file:/eos/user/a/adlintul/scouting/particlenet/particle_features/nano/hlt_PN_numEvent100.root")
+    fileName = cms.string(params.outputFile)
 )
 
 # Tree for the generator weights
@@ -129,6 +127,11 @@ process.gentree = cms.EDAnalyzer("LHEWeightsTreeMaker",
 
 #from DarkPhotonAnalysis.DimuonAnalysis2018.TriggerPaths_cfi import getL1Conf
 L1Info = ['L1_DoubleMu4p5er2p0_SQ_OS_Mass_Min7', 'L1_DoubleMu_12_5','L1_DoubleMu_15_7','L1_TripleMu_5_3_3','L1_TripleMu_5_5_3','L1_QuadMu0','L1_DoubleMu0er1p5_SQ_OS_dR_Max1p4','L1_DoubleMu4p5er2p0_SQ_OS_Mass7to18','L1_DoubleMu4_SQ_OS_dR_Max1p2','L1_SingleMu22','L1_DoubleMu0er1p4_SQ_OS_dR_Max1p4','L1_DoubleMu4p5_SQ_OS_dR_Max1p2','L1_DoubleMu4p5_SQ_OS','L1_DoubleMu0er1p5_SQ_dR_Max1p4','L1_DoubleMu0er2p0_SQ_dR_Max1p4','L1_DoubleMu0_SQ']
+
+process.genParticlesMerged = cms.EDProducer("MergedGenParticleProducer",
+    inputPruned = cms.InputTag("prunedGenParticles"),
+    inputPacked = cms.InputTag("packedGenParticles")
+)
 # Make tree
 process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
 
@@ -154,7 +157,8 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
         pfjets           = cms.InputTag("hltScoutingPFPacker"),
         tracks           = cms.InputTag("hltScoutingTrackPacker"),
         pfcandsParticleNet = cms.InputTag("hltScoutingPFPacker"),
-        genpart          = cms.InputTag('genParticles')
+        genpart          = cms.InputTag("prunedGenParticles")
+        # genParticles = cms.InputTag("genParticlesMerged")
     	#pileupinfo       = cms.InputTag("addPileupInfo"),
     	#geneventinfo     = cms.InputTag("generator"),
 
