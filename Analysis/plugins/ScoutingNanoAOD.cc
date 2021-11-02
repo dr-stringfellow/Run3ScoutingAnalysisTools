@@ -171,7 +171,7 @@ private:
   vector<Float16_t> pfcand_isChargedHad;
   vector<Float16_t> pfcand_isNeutralHad;
   vector<Float16_t> pfcand_lostInnerHits;
-  vector<Float16_t> pfcand_normchi2;
+  // vector<Float16_t> pfcand_normchi2;
   vector<Float16_t> pfcand_quality;
   vector<Float16_t> pfcand_dz;
   vector<Float16_t> pfcand_dzsig;
@@ -249,9 +249,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("pfcand_dz", &pfcand_dz);
   tree->Branch("pfcand_dzsig", &pfcand_dzsig);
   tree->Branch("pfcand_dxy", &pfcand_dxy);
-  tree->Branch("pfcand_dz", &pfcand_dz);
   tree->Branch("pfcand_dxysig", &pfcand_dxysig);
-  tree->Branch("pfcand_btagEtaRel", &pfcand_btagEtaRel);
   tree->Branch("pfcand_btagEtaRel", &pfcand_btagEtaRel);
   tree->Branch("pfcand_btagPtRatio", &pfcand_btagPtRatio);
   tree->Branch("pfcand_btagPParRatio", &pfcand_btagPParRatio);
@@ -296,21 +294,21 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   // Create AK8 Jet
   vector<PseudoJet> fj_part;
+  fj_part.reserve(pfcandsParticleNetH->size());
   int pfcand_i = 0;
-    for (auto pfcands_iter = pfcandsParticleNetH->begin(); pfcands_iter != pfcandsParticleNetH->end(); ++pfcands_iter) {
-      PseudoJet temp_jet = PseudoJet(0, 0, 0, 0);
-      temp_jet.reset_PtYPhiM(pfcands_iter->pt(), pfcands_iter->eta(), pfcands_iter->phi(), pfcands_iter->m());
-      temp_jet.set_user_index(pfcand_i);
-      fj_part.push_back(temp_jet);
-      pfcand_i++;
-    }
+  for (auto pfcands_iter = pfcandsParticleNetH->begin(); pfcands_iter != pfcandsParticleNetH->end(); ++pfcands_iter) {
+    math::PtEtaPhiMLorentzVector p4(pfcands_iter->pt(), pfcands_iter->eta(), pfcands_iter->phi(), pfcands_iter->m());
+    fj_part.emplace_back(p4.px(), p4.py(), p4.pz(), p4.energy());
+    fj_part.back().set_user_index(pfcand_i);
+    pfcand_i++;
+  }
 
   JetDefinition ak8_def = JetDefinition(antikt_algorithm, 0.8);
   fastjet::GhostedAreaSpec area_spec(5.0,1,0.01);
   fastjet::AreaDefinition area_def(fastjet::active_area, area_spec);
 
   ClusterSequenceArea ak8_cs(fj_part, ak8_def, area_def);
-  vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(100.0));
+  vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(170.0));
 
   cout << "Number of jets: " << ak8_jets.size() << endl;
 
