@@ -109,7 +109,7 @@ private:
   double jetR_ = 0.8;
   bool   requiresQuarksContained_ = true;
 
-  bool debug_ = true;
+  bool debug_ = false;
   std::unordered_set<const reco::GenParticle*> processed_;
 
 

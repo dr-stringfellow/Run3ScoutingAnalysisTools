@@ -135,7 +135,6 @@ private:
   const edm::InputTag triggerResultsTag;
   const edm::EDGetTokenT<std::vector<Run3ScoutingParticleParticleNet> >  	pfcandsParticleNetToken;
   const edm::EDGetTokenT<reco::GenParticleCollection>      genpartsToken;
-  // const edm::EDGetTokenT<std::vector<reco::GenParticle>> genParticleToken_;
 
   std::vector<std::string> triggerPathsVector;
   std::map<std::string, int> triggerPathsMap;
@@ -203,13 +202,15 @@ private:
   int label_H_qqqq;
   int label_H_tautau;
   int label_H_qq;
-  int label_QCD_others;
+  int label_QCD_all;
+
+  bool isQCD;
 };
 
 ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   pfcandsParticleNetToken  (consumes<std::vector<Run3ScoutingParticleParticleNet> > (iConfig.getParameter<edm::InputTag>("pfcandsParticleNet"))),
-  genpartsToken            (consumes<reco::GenParticleCollection>         (iConfig.getParameter<edm::InputTag>("genpart")))
-  // genParticleToken_(consumes<std::vector<reco::GenParticle>>(iConfig.getParameter<edm::InputTag>("genParticles")))
+  genpartsToken            (consumes<reco::GenParticleCollection> (iConfig.getParameter<edm::InputTag>("genpart"))),
+  isQCD                    (iConfig.existsAs<bool>("isQCD") ? iConfig.getParameter<bool>("isQCD") : false)
 {
   usesResource("TFileService");
   if (doL1) {
@@ -265,14 +266,16 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("label_Top_bc", &label_Top_bc);
   tree->Branch("label_Top_bq", &label_Top_bq);
   tree->Branch("label_W_cq", &label_W_cq);
-  tree->Branch("label_w_qq", &label_W_qq);
+  tree->Branch("label_W_qq", &label_W_qq);
   tree->Branch("label_Z_bb", &label_Z_bb);
   tree->Branch("label_Z_cc", &label_Z_cc);
+  tree->Branch("label_Z_qq", &label_Z_qq);
   tree->Branch("label_H_bb", &label_H_bb);
+  tree->Branch("label_H_cc", &label_H_cc);
   tree->Branch("label_H_qqqq", &label_H_qqqq);
   tree->Branch("label_H_tautau", &label_H_tautau);
   tree->Branch("label_H_qq", &label_H_qq);
-  tree->Branch("label_QCD_others", &label_QCD_others);
+  tree->Branch("label_QCD_all", &label_QCD_all);
 }
 
 ScoutingNanoAOD::~ScoutingNanoAOD() {
@@ -290,8 +293,6 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
 
   Handle<GenParticleCollection> genpartH;
   iEvent.getByToken(genpartsToken, genpartH);
-  // edm::Handle<vector<reco::GenParticle>> genParticles;
-  // iEvent.getByToken(genParticleToken_, genParticles);
 
   // Create AK8 Jet
   vector<PseudoJet> fj_part;
@@ -312,13 +313,13 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
   vector<PseudoJet> ak8_jets = sorted_by_pt(ak8_cs.inclusive_jets(100.0));
 
   cout << "Number of jets: " << ak8_jets.size() << endl;
-  int jet_id = 0;
-  int qcd_n = 0;
 
   for(auto &j: ak8_jets) {
 
-    std::cout << "Jet: " << jet_id << std::endl;
-    jet_id++;
+    // Match AK8 jet to truth label
+    auto ak8_label = ak8_match.flavorLabel(j, *genpartH, 0.8);
+    cout << "Label: " << ak8_label.first << endl;
+    if ((ak8_label.first == FatJetMatching::QCD_all && !isQCD) || (ak8_label.first != FatJetMatching::QCD_all && isQCD)) continue;
 
     float etasign = j.eta() > 0 ? 1 : -1;
 
@@ -370,14 +371,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     fj_eta = j.eta();
     fj_phi = j.phi();
     fj_mass = j.m();
-
-    // Match AK8 jet to truth label
-    auto ak8_label = ak8_match.flavorLabel(j, *genpartH, 0.8);
-    cout << "Jet label: " << ak8_label.first << endl;
-    if (ak8_label.first != 55) {
-      std::cout << "Jet label is not QCD!" << std::endl;
-      qcd_n++;
-    }
+    
     label_Top_bcq = (ak8_label.first == FatJetMatching::Top_bcq);
     label_Top_bqq = (ak8_label.first == FatJetMatching::Top_bqq);
     label_Top_bc = (ak8_label.first == FatJetMatching::Top_bc);
@@ -392,13 +386,11 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
     label_H_qqqq = (ak8_label.first == FatJetMatching::H_qqqq);
     label_H_tautau = (ak8_label.first == FatJetMatching::H_tautau);
     label_H_qq = (ak8_label.first == FatJetMatching::H_qq);
-    label_QCD_others = (ak8_label.first == FatJetMatching::QCD_others);
+    label_QCD_all = (ak8_label.first == FatJetMatching::QCD_all);
 
     tree->Fill();	
     clearVars();
   }
-  std::cout << "Number on none QCD labels: " << qcd_n << std::endl;
-	
 }
 
 void ScoutingNanoAOD::clearVars(){
