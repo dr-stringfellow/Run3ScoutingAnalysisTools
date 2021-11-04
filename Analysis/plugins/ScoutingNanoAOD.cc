@@ -171,7 +171,7 @@ private:
   vector<Float16_t> pfcand_isChargedHad;
   vector<Float16_t> pfcand_isNeutralHad;
   vector<Float16_t> pfcand_lostInnerHits;
-  // vector<Float16_t> pfcand_normchi2;
+  vector<Float16_t> pfcand_normchi2;
   vector<Float16_t> pfcand_quality;
   vector<Float16_t> pfcand_dz;
   vector<Float16_t> pfcand_dzsig;
@@ -245,6 +245,7 @@ ScoutingNanoAOD::ScoutingNanoAOD(const edm::ParameterSet& iConfig):
   tree->Branch("pfcand_isChargedHad", &pfcand_isChargedHad);
   tree->Branch("pfcand_isNeutralHad", &pfcand_isNeutralHad);
   tree->Branch("pfcand_lostInnerHits", &pfcand_lostInnerHits);
+  tree->Branch("pfcand_normchi2", &pfcand_normchi2);
   tree->Branch("pfcand_quality", &pfcand_quality);
   tree->Branch("pfcand_dz", &pfcand_dz);
   tree->Branch("pfcand_dzsig", &pfcand_dzsig);
@@ -355,6 +356,7 @@ void ScoutingNanoAOD::analyze(const edm::Event& iEvent, const edm::EventSetup& i
       pfcand_isChargedHad.push_back(abs(reco_cand->pdgId()) == 211);
       pfcand_isNeutralHad.push_back(abs(reco_cand->pdgId()) == 130);
       pfcand_lostInnerHits.push_back(reco_cand->lostInnerHits());
+      pfcand_normchi2.push_back(reco_cand->normchi2());
       pfcand_quality.push_back(reco_cand->quality());
       pfcand_dz.push_back(reco_cand->dz());
       pfcand_dzsig.push_back(reco_cand->dzsig());
@@ -404,6 +406,7 @@ void ScoutingNanoAOD::clearVars(){
   pfcand_isChargedHad.clear();
   pfcand_isNeutralHad.clear();
   pfcand_lostInnerHits.clear();
+  pfcand_normchi2.clear();
   pfcand_quality.clear();
   pfcand_dz.clear();
   pfcand_dzsig.clear();
