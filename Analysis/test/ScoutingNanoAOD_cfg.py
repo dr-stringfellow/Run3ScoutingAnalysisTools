@@ -5,6 +5,13 @@ from FWCore.ParameterSet.VarParsing import VarParsing
 params = VarParsing('analysis')
 
 params.register(
+    'isQCD',
+    False,
+    VarParsing.multiplicity.singleton,VarParsing.varType.bool,
+    'Flag to indicate whether the sample is QCD or not'
+)
+
+params.register(
     'isMC',
     True,
     VarParsing.multiplicity.singleton,VarParsing.varType.bool,
@@ -158,7 +165,7 @@ process.mmtree = cms.EDAnalyzer('ScoutingNanoAOD',
         tracks           = cms.InputTag("hltScoutingTrackPacker"),
         pfcandsParticleNet = cms.InputTag("hltScoutingPFPacker"),
         genpart          = cms.InputTag("prunedGenParticles"),
-        isQCD            = cms.bool( False )
+        isQCD            = cms.bool( params.isQCD )
         # genParticles = cms.InputTag("genParticlesMerged")
     	#pileupinfo       = cms.InputTag("addPileupInfo"),
     	#geneventinfo     = cms.InputTag("generator"),

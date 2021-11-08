@@ -79,7 +79,7 @@ cmsRun scouting_GluGluHToBB.py
 ## Create ntuples
 
 ```
-cmsRun Run3ScoutingAnalysisTools/Analysis/test/ScoutingNanoAOD_cfg.py inputFiles=/eos/user/a/adlintul/scouting/particlenet/particle_features/reHLT/edm/scouting_75.root outputFile=/eos/user/a/adlintul/scouting/particlenet/particle_features/reHLT/nano/scouting_75.root
+cmsRun Run3ScoutingAnalysisTools/Analysis/test/ScoutingNanoAOD_cfg.py inputFiles=/eos/user/a/adlintul/scouting/particlenet/particle_features/reHLT/edm/scouting_75.root outputFile=/eos/user/a/adlintul/scouting/particlenet/particle_features/reHLT/nano/scouting_75.root isQCD=False isMC=True useWeights=False GlobalTagMC=112X_mcRun3_2021_realistic_v16
 ```
 
 Done!
