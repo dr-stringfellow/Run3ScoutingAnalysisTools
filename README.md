@@ -25,7 +25,7 @@ git checkout alintulu/CMSSW_11_2_1_Patatrack-ScoutPNet
 
 3. clone this repository and compile
 
-git clone git@github.com:alintulu/Run3ScoutingAnalysisTools.git -b particlenet-pat
+git clone git@github.com:alintulu/Run3ScoutingAnalysisTools.git -b particlenet-reco
 scram b
 ```
 
